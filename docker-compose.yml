@@ -1,0 +1,73 @@
+version: "3.8"
+
+services:
+
+    configserver:
+        image: adekzs/configserver:latest
+        mem_limit: 700m
+	ports:
+	    - "8071:8071"
+	networks:
+           - adekzsbank-network
+
+    accounts:
+        image: adekzs/accounts:latest
+        mem_limit: 700m
+        ports:
+           - "8080:8080"
+        networks:
+           - adekzsbank-network
+	depends_on:
+	   - configserver
+	deploy:
+	   restart_policy:
+		condition: on-failure
+		delay: 5s
+		max_attempts: 3
+		window: 120s
+	environment:
+	    SPRING_PROFILE_ACTIVE: default
+	    SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
+
+    loans:
+        image: adekzs/loan:latest
+        mem_limit: 700m
+        ports:
+           - "8090:8090"
+        networks:
+           - adekzsbank-network
+	depends_on:
+	   - configserver
+	deploy:
+	   restart_policy:
+		condition: on-failure
+		delay: 5s
+		max_attempts: 3
+		window: 120s
+	environment:
+	    SPRING_PROFILE_ACTIVE: default
+	    SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
+
+
+    cards:
+        image: adekzs/cards:latest
+        mem_limit: 700m
+        ports:
+           - "9090:9090"
+        networks:
+           - adekzsbank-network
+	depends_on:
+	   - configserver
+	deploy:
+	   restart_policy:
+		condition: on-failure
+		delay: 5s
+		max_attempts: 3
+		window: 120s
+	environment:
+	    SPRING_PROFILE_ACTIVE: default
+	    SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
+
+
+networks:
+    adekzsbank-network:

@@ -1,0 +1,126 @@
+version: "3.8"
+
+services:
+  zipkin:
+    image: openzipkin/zipkin
+    mem_limit: 700m
+    ports:
+      - "9411:9411"
+    networks:
+      - adekzsbank-network
+
+ configserver:
+    image: adekzs/configserver:latest
+    mem_limit: 700m
+    ports:
+    - "8071:8071"
+    networks:
+    - adekzsbank-network
+
+ eurekaserver:
+   image: adekzs/eurekaserver:latest
+   mem_limit: 700m
+   ports:
+     - "8070:8070"
+   networks:
+     - adekzsbank-network
+   depends_on:
+     - configserver
+   deploy:
+     restart_policy:
+       condition: on-failure
+       delay: 5s
+       max_attempts: 3
+       window: 120s
+   environment:
+     SPRING_PROFILE_ACTIVE: prod
+     SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
+
+ accounts:
+    image: adekzs/accounts:latest
+    mem_limit: 700m
+    ports:
+    - "8080:8080"
+    networks:
+    - adekzsbank-network
+    depends_on:
+    - configserver
+    - eurekaserver
+    deploy:
+        restart_policy:
+            condition: on-failure
+            delay: 5s
+            max_attempts: 3
+            window: 120s
+    environment:
+        SPRING_PROFILES_ACTIVE: prod
+        SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
+        EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka
+
+ loans:
+    image: adekzs/loan:latest
+    mem_limit: 700m
+    ports:
+    - "8090:8090"
+    networks:
+    - adekzsbank-network
+    depends_on:
+    - configserver
+    deploy:
+         restart_policy:
+            condition: on-failure
+            delay: 5s
+            max_attempts: 3
+            window: 120s
+    environment:
+        SPRING_PROFILES_ACTIVE: prod
+        SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
+        EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka
+
+
+ cards:
+    image: adekzs/cards:latest
+    mem_limit: 700m
+    ports:
+    - "9090:9090"
+    networks:
+    - adekzsbank-network
+    depends_on:
+    - configserver
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    environment:
+        SPRING_PROFILES_ACTIVE: prod
+        SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
+        EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka
+
+ gatewayserver:
+   image: adekzs/gatewayserver:latest
+   mem_limit: 700m
+   ports:
+     - "8072:8072"
+   networks:
+     - adekzsbank-network
+   depends_on:
+     - configserver
+     - eurekaserver
+     - loans
+     - cards
+     - accounts
+   deploy:
+     restart_policy:
+       condition: on-failure
+       delay: 45s
+       max_attempts: 3
+       window: 180s
+   environment:
+     SPRING_PROFILE_ACTIVE: prod
+     SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
+     EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka
+
+networks:
+    adekzsbank-network:
