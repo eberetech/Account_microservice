@@ -1,6 +1,6 @@
 #
 FROM openjdk:8-slim as build
-EXPOSE 8080
+EXPOSE 8085
 #
 MAINTAINER adekzs
 
